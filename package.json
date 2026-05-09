@@ -14,6 +14,7 @@
     "qa:summary": "tsx src/reporters/build-summary.ts",
     "qa:telegram": "tsx src/telegram/send-summary.ts",
     "qa:drive": "tsx src/google-drive/upload-report.ts",
+    "qa:drive:auth": "tsx src/google-drive/authorize.ts",
     "qa:run:smoke": "npm run test:smoke; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; npm run qa:drive; exit $TEST_STATUS",
     "qa:run:critical": "npm run test:critical; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; npm run qa:drive; exit $TEST_STATUS",
     "qa:run:full": "npm run test:full; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; npm run qa:drive; exit $TEST_STATUS"

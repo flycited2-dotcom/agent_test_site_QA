@@ -7,5 +7,6 @@ storage/
 .env.local
 *service-account*.json
 *google*.json
+client_secret*.json
 npm-debug.log*
 .DS_Store

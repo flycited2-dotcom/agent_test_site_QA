@@ -75,7 +75,35 @@ TELEGRAM_CHAT_ID=ваш_chat_id
 
 ## Google Drive отчёты
 
-Агент генерирует CSV-отчёт `reports/spreadsheet/summary.csv`, который открывается в Google Таблицах и Excel. Чтобы включить автозагрузку CSV и Markdown-отчёта в Google Drive через service account, папка должна находиться внутри Shared drive / Общего диска. Обычная папка в личном "Мой диск" может отклонить загрузку, потому что у service account нет собственного хранилища.
+Агент генерирует CSV-отчёт `reports/spreadsheet/summary.csv`, который открывается в Google Таблицах и Excel.
+
+Для обычного личного "Мой диск" используйте OAuth:
+
+1. Скачать OAuth client JSON из Google Cloud Console.
+2. Положить JSON на сервер вне Git-репозитория, например `/home/qa-agent/google-oauth-client.json`.
+3. В `.env` прописать:
+
+```text
+GOOGLE_DRIVE_ENABLED=true
+GOOGLE_DRIVE_FOLDER_ID=1vK3PE6VHTx-_BM-0VU0NdO8kuDr9Cg95
+GOOGLE_OAUTH_CLIENT_JSON=/home/qa-agent/google-oauth-client.json
+```
+
+4. Один раз выполнить авторизацию:
+
+```bash
+npm run qa:drive:auth
+```
+
+5. Открыть ссылку, разрешить доступ, скопировать `code` из адресной строки и выполнить:
+
+```bash
+npm run qa:drive:auth -- "ВАШ_CODE"
+```
+
+6. Добавить полученный `GOOGLE_OAUTH_REFRESH_TOKEN=...` в `.env`.
+
+Вариант через service account возможен только для папки внутри Shared drive / Общего диска. Обычная папка в личном "Мой диск" может отклонить загрузку, потому что у service account нет собственного хранилища.
 
 1. Создать Google service account и скачать JSON-ключ.
 2. Расшарить папку Drive на `client_email` из JSON с правом редактора.

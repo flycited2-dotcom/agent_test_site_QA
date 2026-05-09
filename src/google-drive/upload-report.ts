@@ -3,12 +3,15 @@ import path from 'node:path';
 import dotenv from 'dotenv';
 import { GaxiosError } from 'gaxios';
 import { google } from 'googleapis';
+import { createOAuthClient, readOAuthClientConfigFile } from './oauth';
 
 dotenv.config();
 
 const enabled = (process.env.GOOGLE_DRIVE_ENABLED || 'false') === 'true';
 const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
 const credentialsPath = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
+const oauthClientPath = process.env.GOOGLE_OAUTH_CLIENT_JSON || '';
+const oauthRefreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN || '';
 const mode = process.env.QA_MODE || 'manual';
 
 const files = [
@@ -37,14 +40,20 @@ if (!folderId) {
   throw new Error('Google Drive не настроен: укажите GOOGLE_DRIVE_FOLDER_ID в .env');
 }
 
-if (!credentialsPath || !fs.existsSync(credentialsPath)) {
-  throw new Error('Google Drive не настроен: укажите путь GOOGLE_SERVICE_ACCOUNT_JSON к JSON service account');
+if (!oauthRefreshToken && (!credentialsPath || !fs.existsSync(credentialsPath))) {
+  throw new Error('Google Drive не настроен: укажите GOOGLE_OAUTH_REFRESH_TOKEN или путь GOOGLE_SERVICE_ACCOUNT_JSON');
 }
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: credentialsPath,
-  scopes: ['https://www.googleapis.com/auth/drive.file']
-});
+const auth = oauthRefreshToken
+  ? createOAuthClient(readOAuthClientConfigFile(oauthClientPath))
+  : new google.auth.GoogleAuth({
+    keyFile: credentialsPath,
+    scopes: ['https://www.googleapis.com/auth/drive.file']
+  });
+
+if ('setCredentials' in auth) {
+  auth.setCredentials({ refresh_token: oauthRefreshToken });
+}
 
 const drive = google.drive({ version: 'v3', auth });
 const stamp = timestamp();
