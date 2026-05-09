@@ -1,0 +1,28 @@
+{
+  "name": "climat-simf-qa-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "QA_MODE=smoke playwright test tests/01-smoke.spec.ts",
+    "test:critical": "QA_MODE=critical playwright test tests/02-critical-path.spec.ts tests/03-forms-links.spec.ts",
+    "test:full": "QA_MODE=full playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report reports/html",
+    "qa:discover": "tsx src/discovery/discover.ts",
+    "qa:summary": "tsx src/reporters/build-summary.ts",
+    "qa:telegram": "tsx src/telegram/send-summary.ts",
+    "qa:run:smoke": "npm run test:smoke; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; exit $TEST_STATUS",
+    "qa:run:critical": "npm run test:critical; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; exit $TEST_STATUS",
+    "qa:run:full": "npm run test:full; TEST_STATUS=$?; npm run qa:summary; npm run qa:telegram; exit $TEST_STATUS"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.10.1",
+    "dotenv": "^17.2.3",
+    "fast-xml-parser": "^5.3.0"
+  }
+}

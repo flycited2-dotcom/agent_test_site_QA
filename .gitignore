@@ -1,0 +1,8 @@
+node_modules/
+reports/
+test-results/
+storage/
+
+.env.local
+npm-debug.log*
+.DS_Store

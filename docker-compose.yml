@@ -1,0 +1,13 @@
+services:
+  qa-agent:
+    build: .
+    container_name: climat-simf-qa-agent
+    env_file:
+      - .env
+    volumes:
+      - ./reports:/app/reports
+      - ./test-results:/app/test-results
+      - ./storage:/app/storage
+    restart: unless-stopped
+    shm_size: "1gb"
+    command: bash scripts/agent-loop.sh
