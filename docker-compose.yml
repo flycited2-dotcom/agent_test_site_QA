@@ -10,5 +10,6 @@ services:
       - ./storage:/app/storage
       - ./secrets:/app/secrets:ro
     restart: unless-stopped
+    network_mode: host
     shm_size: "1gb"
     command: bash scripts/agent-loop.sh
