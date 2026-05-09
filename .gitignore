@@ -5,5 +5,7 @@ storage/
 
 .env
 .env.local
+*service-account*.json
+*google*.json
 npm-debug.log*
 .DS_Store

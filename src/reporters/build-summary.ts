@@ -1,21 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../utils/config';
+import { buildReportModel, toCsv } from './report-model';
 
 const jsonPath = path.resolve('reports/json/results.json');
 const mdDir = path.resolve('reports/markdown');
+const spreadsheetDir = path.resolve('reports/spreadsheet');
 fs.mkdirSync(mdDir, { recursive: true });
-
-function severity(title: string): string {
-  if (/checkout|корзин|заказ|заяв|форм|оплат/i.test(title)) return 'Critical/High';
-  if (/catalog|карточ|фильтр|поиск|товар/i.test(title)) return 'High';
-  if (/seo|description|h1|robots|sitemap/i.test(title)) return 'Medium';
-  return 'Medium';
-}
-
-function stripAnsi(text: string): string {
-  return text.replace(/\u001b\[[0-9;]*m/g, '');
-}
+fs.mkdirSync(spreadsheetDir, { recursive: true });
 
 if (!fs.existsSync(jsonPath)) {
   fs.writeFileSync(path.join(mdDir, 'summary.md'), `# QA отчёт
@@ -26,51 +18,34 @@ if (!fs.existsSync(jsonPath)) {
 }
 
 const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-const stats = data.stats || {};
-const suites = data.suites || [];
-const failed: any[] = [];
-const passed: any[] = [];
-function walk(specs: any[]) {
-  for (const s of specs || []) {
-    for (const spec of s.specs || []) {
-      for (const test of spec.tests || []) {
-        const status = test.results?.at(-1)?.status || 'unknown';
-        const item = { title: spec.title, status, file: s.file, errors: test.results?.flatMap((r: any) => r.errors || []) || [] };
-        if (status === 'passed') passed.push(item); else failed.push(item);
-      }
-    }
-    walk(s.suites || []);
-  }
-}
-walk(suites);
+const model = buildReportModel(data, config.baseUrl, process.env.QA_MODE || 'manual');
 
-const now = new Date().toISOString();
-const total = passed.length + failed.length || stats.expected + stats.unexpected + stats.flaky + stats.skipped || 0;
-let md = `# QA отчёт по сайту ${config.baseUrl}
+let md = `# QA отчёт по сайту ${model.summary.site}
 
 `;
-md += `Дата: ${now}
+md += `Дата: ${model.summary.date}
 
 `;
 md += `## Сводка
 
 `;
-md += `- Всего тестов: ${total}
+md += `- Всего тестов: ${model.summary.total}
 `;
-md += `- Успешно: ${passed.length}
+md += `- Успешно: ${model.summary.passed}
 `;
-md += `- Ошибки: ${failed.length}
+md += `- Ошибки: ${model.summary.failed}
 `;
-md += `- Режим: ${process.env.QA_MODE || 'manual'}
+md += `- Режим: ${model.summary.mode}
 
 `;
 
+const failed = model.rows.filter(row => row.status !== 'passed');
 if (failed.length) {
   md += `## Ошибки и задачи разработчику
 
 `;
   failed.forEach((f, idx) => {
-    md += `### ${idx + 1}. [${severity(f.title)}] ${f.title}
+    md += `### ${idx + 1}. [${f.severity}] ${f.title}
 
 `;
     md += `Файл теста: ${f.file || 'не определён'}
@@ -82,10 +57,10 @@ if (failed.length) {
     md += `Ожидаемый результат: сценарий должен проходить без ошибок, без 4xx/5xx, без некликабельных элементов и без нарушения пользовательского пути.
 
 `;
-    if (f.errors.length) md += `Технические детали:
+    if (f.details) md += `Технические детали:
 
 \`\`\`
-${f.errors.map((e: any) => stripAnsi(e.message || JSON.stringify(e))).join('\n\n')}
+${f.details}
 \`\`\`
 
 `;
@@ -101,4 +76,5 @@ ${f.errors.map((e: any) => stripAnsi(e.message || JSON.stringify(e))).join('\n\n
 }
 
 fs.writeFileSync(path.join(mdDir, 'summary.md'), md, 'utf8');
+fs.writeFileSync(path.join(spreadsheetDir, 'summary.csv'), toCsv(model), 'utf8');
 console.log(md);
