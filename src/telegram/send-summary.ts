@@ -20,13 +20,37 @@ const text = fs.existsSync(summaryPath) ? fs.readFileSync(summaryPath, 'utf8') :
 const short = text.length > 3900
   ? `${text.slice(0, 3900)}\n\nОтчёт обрезан. Полная версия в reports/markdown/summary.md`
   : text;
-const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ chat_id: chatId, text: short })
-});
-console.log(`Telegram status: ${res.status}`);
-if (!res.ok) {
-  const body = await res.text().catch(() => '');
-  throw new Error(`Telegram API не принял сообщение: ${res.status} ${body}`);
+
+async function sendTelegram(): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    return await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: short }),
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
+
+let lastError: unknown;
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    const res = await sendTelegram();
+    console.log(`Telegram status: ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Telegram API не принял сообщение: ${res.status} ${body}`);
+    }
+    process.exit(0);
+  } catch (error) {
+    lastError = error;
+    console.log(`Telegram attempt ${attempt} failed: ${(error as Error).message}`);
+    if (attempt < 3) await new Promise(resolve => setTimeout(resolve, attempt * 5000));
+  }
+}
+
+throw lastError;
