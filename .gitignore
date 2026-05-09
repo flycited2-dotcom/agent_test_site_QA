@@ -3,6 +3,7 @@ reports/
 test-results/
 storage/
 
+.env
 .env.local
 npm-debug.log*
 .DS_Store
