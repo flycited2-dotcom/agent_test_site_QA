@@ -95,13 +95,13 @@ GOOGLE_OAUTH_CLIENT_JSON=/home/qa-agent/google-oauth-client.json
 npm run qa:drive:auth
 ```
 
-5. Открыть ссылку, разрешить доступ, скопировать `code` из адресной строки и выполнить:
+5. Открыть ссылку, разрешить доступ. Если браузер откроет `http://localhost/...` и страница не загрузится, это нормально: скопируйте весь URL из адресной строки или только параметр `code`.
 
 ```bash
-npm run qa:drive:auth -- "ВАШ_CODE"
+npm run qa:drive:auth -- "ВАШ_CODE_ИЛИ_ПОЛНЫЙ_LOCALHOST_URL"
 ```
 
-6. Добавить полученный `GOOGLE_OAUTH_REFRESH_TOKEN=...` в `.env`.
+6. Команда сама сохранит `GOOGLE_OAUTH_REFRESH_TOKEN` в локальный `.env`.
 
 Вариант через service account возможен только для папки внутри Shared drive / Общего диска. Обычная папка в личном "Мой диск" может отклонить загрузку, потому что у service account нет собственного хранилища.
 
