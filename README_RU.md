@@ -80,13 +80,13 @@ TELEGRAM_CHAT_ID=ваш_chat_id
 Для обычного личного "Мой диск" используйте OAuth:
 
 1. Скачать OAuth client JSON из Google Cloud Console.
-2. Положить JSON на сервер вне Git-репозитория, например `/home/qa-agent/google-oauth-client.json`.
+2. Положить JSON на сервер в `secrets/google-oauth-client.json`. Эта папка монтируется в контейнер как `/app/secrets`.
 3. В `.env` прописать:
 
 ```text
 GOOGLE_DRIVE_ENABLED=true
 GOOGLE_DRIVE_FOLDER_ID=1vK3PE6VHTx-_BM-0VU0NdO8kuDr9Cg95
-GOOGLE_OAUTH_CLIENT_JSON=/home/qa-agent/google-oauth-client.json
+GOOGLE_OAUTH_CLIENT_JSON=/app/secrets/google-oauth-client.json
 ```
 
 4. Один раз выполнить авторизацию:
