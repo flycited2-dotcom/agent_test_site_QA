@@ -6,7 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "test:smoke": "cross-env QA_MODE=smoke playwright test tests/01-smoke.spec.ts",
-    "test:critical": "cross-env QA_MODE=critical playwright test tests/02-critical-path.spec.ts tests/03-forms-links.spec.ts",
+    "test:critical": "cross-env QA_MODE=critical playwright test tests/02-critical-path.spec.ts tests/03-forms-links.spec.ts tests/07-user-journeys.spec.ts",
     "test:full": "cross-env QA_MODE=full playwright test",
     "test:headed": "playwright test --headed",
     "report": "playwright show-report reports/html",
