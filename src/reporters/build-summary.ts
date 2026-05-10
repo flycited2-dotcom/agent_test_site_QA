@@ -3,6 +3,7 @@ import path from 'node:path';
 import { config } from '../utils/config';
 import { buildReportModel, toCsv } from './report-model';
 import { buildIssueSnapshot, readIssueState, writeDeveloperReports, writeIssueState } from './issue-store';
+import { writeCoverageReports } from './coverage-report';
 
 const jsonPath = path.resolve('reports/json/results.json');
 const mdDir = path.resolve('reports/markdown');
@@ -24,6 +25,7 @@ const day = model.summary.date.slice(0, 10);
 const issueSnapshot = buildIssueSnapshot(readIssueState(), model, day);
 writeIssueState(issueSnapshot);
 writeDeveloperReports(issueSnapshot, model.summary.site);
+writeCoverageReports(model, day);
 
 let md = `# QA отчёт по сайту ${model.summary.site}
 
@@ -41,6 +43,10 @@ md += `- Успешно: ${model.summary.passed}
 md += `- Ошибки: ${model.summary.failed}
 `;
 md += `- Режим: ${model.summary.mode}
+
+`;
+
+md += `Покрытие запуска: reports/developer/QA_COVERAGE.md
 
 `;
 

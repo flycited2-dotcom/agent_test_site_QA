@@ -16,6 +16,7 @@ export type Issue = {
   lastSeen: string;
   occurrences: number;
   modes: string[];
+  resolvedInModes: string[];
   examples: string[];
 };
 
@@ -63,7 +64,12 @@ function nextIssueId(issues: Issue[], site: string, date: string): string {
 }
 
 export function buildIssueSnapshot(previous: IssueState, model: ReportModel, date: string): IssueSnapshot {
-  const issues = previous.issues.map(issue => ({ ...issue, modes: [...issue.modes], examples: [...issue.examples] }));
+  const issues = previous.issues.map(issue => ({
+    ...issue,
+    modes: [...issue.modes],
+    resolvedInModes: [...(issue.resolvedInModes || (issue.status === 'resolved' ? issue.modes : []))],
+    examples: [...issue.examples]
+  }));
   const seen = new Set<string>();
   let newIssues = 0;
 
@@ -72,6 +78,7 @@ export function buildIssueSnapshot(previous: IssueState, model: ReportModel, dat
     seen.add(fingerprint);
     const existing = issues.find(issue => issue.fingerprint === fingerprint);
     if (existing) {
+      existing.resolvedInModes = existing.resolvedInModes.filter(mode => mode !== row.mode);
       existing.status = existing.status === 'new'
         ? 'new'
         : existing.firstSeen.startsWith(date) ? 'active' : 'still_active';
@@ -97,15 +104,22 @@ export function buildIssueSnapshot(previous: IssueState, model: ReportModel, dat
       lastSeen: model.summary.date,
       occurrences: 1,
       modes: [row.mode],
+      resolvedInModes: [],
       examples: row.details ? [row.details] : []
     });
   }
 
   let resolvedIssues = 0;
   for (const issue of issues) {
-    if (issue.site === model.summary.site && !seen.has(issue.fingerprint) && issue.status !== 'resolved') {
-      issue.status = 'resolved';
-      resolvedIssues += 1;
+    if (issue.site !== model.summary.site || seen.has(issue.fingerprint) || issue.status === 'resolved') {
+      continue;
+    }
+    if (issue.modes.includes(model.summary.mode) && !issue.resolvedInModes.includes(model.summary.mode)) {
+      issue.resolvedInModes.push(model.summary.mode);
+      if (issue.resolvedInModes.length >= issue.modes.length) {
+        issue.status = 'resolved';
+        resolvedIssues += 1;
+      }
     }
   }
 
@@ -130,7 +144,7 @@ function csvCell(value: string | number): string {
 }
 
 function issuesToCsv(issues: Issue[]): string {
-  const header = ['ID', 'Статус', 'Сайт', 'Важность', 'Задача', 'Файл', 'Повторы', 'Первый раз', 'Последний раз', 'Режимы'];
+  const header = ['ID', 'Статус', 'Сайт', 'Важность', 'Задача', 'Файл', 'Повторы', 'Первый раз', 'Последний раз', 'Режимы', 'Закрыто в режимах'];
   const lines = issues.map(issue => [
     issue.id,
     issue.status,
@@ -141,7 +155,8 @@ function issuesToCsv(issues: Issue[]): string {
     issue.occurrences,
     issue.firstSeen,
     issue.lastSeen,
-    issue.modes.join(', ')
+    issue.modes.join(', '),
+    issue.resolvedInModes.join(', ')
   ].map(csvCell).join(','));
   return [header.join(','), ...lines].join('\n') + '\n';
 }
@@ -158,7 +173,9 @@ function issuesToMarkdown(title: string, issues: Issue[], intro: string): string
     md += `- Повторилась: ${issue.occurrences} раз\n`;
     md += `- Первый раз: ${issue.firstSeen}\n`;
     md += `- Последний раз: ${issue.lastSeen}\n`;
-    md += `- Режимы: ${issue.modes.join(', ')}\n\n`;
+    md += `- Режимы: ${issue.modes.join(', ')}\n`;
+    if (issue.resolvedInModes.length) md += `- Закрыто в режимах: ${issue.resolvedInModes.join(', ')}\n`;
+    md += `\n`;
     if (issue.examples[0]) md += `Последний пример:\n\n\`\`\`\n${issue.examples[0]}\n\`\`\`\n\n`;
   }
   return md;

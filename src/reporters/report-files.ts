@@ -31,6 +31,18 @@ export function listReportFiles(day = todayIso()): ReportFile[] {
       group: 'active'
     },
     {
+      path: path.resolve('reports/developer/QA_COVERAGE.md'),
+      name: 'QA_COVERAGE.md',
+      mimeType: 'text/markdown',
+      group: 'summary'
+    },
+    {
+      path: path.resolve('reports/developer/QA_COVERAGE.csv'),
+      name: 'QA_COVERAGE.csv',
+      mimeType: 'text/csv',
+      group: 'summary'
+    },
+    {
       path: path.resolve(`reports/developer/daily/${day}/QA_DAILY_SUMMARY.md`),
       name: `QA_DAILY_SUMMARY_${day}.md`,
       mimeType: 'text/markdown',
@@ -39,6 +51,18 @@ export function listReportFiles(day = todayIso()): ReportFile[] {
     {
       path: path.resolve(`reports/developer/daily/${day}/QA_DAILY_ISSUES.csv`),
       name: `QA_DAILY_ISSUES_${day}.csv`,
+      mimeType: 'text/csv',
+      group: 'daily'
+    },
+    {
+      path: path.resolve(`reports/developer/daily/${day}/QA_COVERAGE.md`),
+      name: `QA_COVERAGE_${day}.md`,
+      mimeType: 'text/markdown',
+      group: 'daily'
+    },
+    {
+      path: path.resolve(`reports/developer/daily/${day}/QA_COVERAGE.csv`),
+      name: `QA_COVERAGE_${day}.csv`,
       mimeType: 'text/csv',
       group: 'daily'
     },

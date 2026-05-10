@@ -81,6 +81,8 @@ storage            найденные URL
 ```text
 reports/developer/QA_ACTIVE_ISSUES.md       текущий мастер-файл активных проблем
 reports/developer/QA_ACTIVE_ISSUES.csv      та же таблица для Google Sheets/Excel
+reports/developer/QA_COVERAGE.md            что именно было проверено в последнем запуске
+reports/developer/QA_COVERAGE.csv           таблица покрытия для Google Sheets/Excel
 reports/developer/daily/YYYY-MM-DD/         дневной срез новых/активных/решённых проблем
 reports/developer/state/issues.json         техническое состояние дедупликации
 ```
@@ -92,7 +94,7 @@ reports/developer/state/issues.json         техническое состоя�
 <папка из GOOGLE_DRIVE_FOLDER_ID>/<site>/daily/YYYY-MM-DD/
 ```
 
-Для разработчика обычно достаточно отправить дневную папку `daily/YYYY-MM-DD` или файл `QA_ACTIVE_ISSUES.csv`.
+Для разработчика обычно достаточно отправить дневную папку `daily/YYYY-MM-DD`, файл `QA_ACTIVE_ISSUES.csv` и `QA_COVERAGE.md`, чтобы было видно не только ошибки, но и фактический объём проверки.
 
 ## Усиленные пользовательские сценарии
 
