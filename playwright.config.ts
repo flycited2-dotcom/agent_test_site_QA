@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import { readRuntimeConfig } from './src/utils/runtime-config';
 
 dotenv.config();
 
-const baseURL = process.env.BASE_URL || 'https://climat-simf.ru/';
+const baseURL = readRuntimeConfig(process.env.BASE_URL || 'https://climat-simf.ru/').site.url;
 const timeout = Number(process.env.DEFAULT_TIMEOUT_MS || 15000);
 
 export default defineConfig({

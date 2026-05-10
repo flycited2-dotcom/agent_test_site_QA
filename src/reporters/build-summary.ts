@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../utils/config';
 import { buildReportModel, toCsv } from './report-model';
+import { buildIssueSnapshot, readIssueState, writeDeveloperReports, writeIssueState } from './issue-store';
 
 const jsonPath = path.resolve('reports/json/results.json');
 const mdDir = path.resolve('reports/markdown');
@@ -19,6 +20,10 @@ if (!fs.existsSync(jsonPath)) {
 
 const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 const model = buildReportModel(data, config.baseUrl, process.env.QA_MODE || 'manual');
+const day = model.summary.date.slice(0, 10);
+const issueSnapshot = buildIssueSnapshot(readIssueState(), model, day);
+writeIssueState(issueSnapshot);
+writeDeveloperReports(issueSnapshot, model.summary.site);
 
 let md = `# QA отчёт по сайту ${model.summary.site}
 

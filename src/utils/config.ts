@@ -1,8 +1,14 @@
 import dotenv from 'dotenv';
+import { readRuntimeConfig } from './runtime-config';
 dotenv.config();
 
+const runtime = readRuntimeConfig(process.env.BASE_URL || 'https://climat-simf.ru/');
+
 export const config = {
-  baseUrl: process.env.BASE_URL || 'https://climat-simf.ru/',
+  baseUrl: runtime.site.url,
+  siteProfile: runtime.site.profile,
+  testDepth: runtime.site.depth,
+  safeMode: runtime.site.safeMode,
   maxProductsFull: Number(process.env.MAX_PRODUCTS_FULL || 300),
   maxProductsSmoke: Number(process.env.MAX_PRODUCTS_SMOKE || 8),
   maxCategoryPages: Number(process.env.MAX_CATEGORY_PAGES || 80),

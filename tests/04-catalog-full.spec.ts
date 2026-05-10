@@ -4,6 +4,8 @@ import { config } from '../src/utils/config';
 import { getVisibleLinks } from '../src/utils/qa-actions';
 
 test.describe('Full catalog: обход категорий и карточек', () => {
+  test.skip(['landing', 'content'].includes(config.siteProfile), 'Полный обход каталога запускается только для auto/catalog/shop профилей');
+
   test('полный обход найденных карточек товаров', async ({ page }, testInfo) => {
     test.setTimeout(20 * 60 * 1000);
     await page.goto('/', { waitUntil: 'domcontentloaded' });

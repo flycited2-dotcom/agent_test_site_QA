@@ -46,9 +46,49 @@ chmod +x install_vps.sh
 reports/html       HTML-отчёт Playwright
 reports/json       JSON-результат
 reports/markdown   краткое ТЗ/отчёт для разработчика
+reports/developer  активный мастер-отчёт, CSV и дневные срезы для разработчика
 test-results       trace/video/screenshots ошибок
 storage            найденные URL
 ```
+
+## Telegram-команды агента
+
+Команды пишутся боту на русском:
+
+```text
+/статус                         текущий сайт, профиль, глубина и активные проблемы
+/отчет                          прислать текущий мастер-отчёт и дневные файлы
+/запуск smoke|critical|full      запустить проверку прямо сейчас
+/сайт https://example.com        переключить агента на другой сайт
+/профиль авто|лендинг|сайт|каталог|магазин
+/глубина smoke|critical|full     глубина по умолчанию
+/пауза                           остановить плановые проверки
+/продолжить                      вернуть плановые проверки
+/перезапуск                      продолжить расписание и запустить проверку
+/помощь                          список команд
+```
+
+После `/сайт ...` агент продолжает работать по тем же правилам: Telegram, Google Drive, email, дедупликация проблем и дневные отчёты сохраняются.
+
+## Группировка developer-отчётов
+
+Агент ведёт контрольные точки, чтобы не пересылать разработчику десятки сообщений:
+
+```text
+reports/developer/QA_ACTIVE_ISSUES.md       текущий мастер-файл активных проблем
+reports/developer/QA_ACTIVE_ISSUES.csv      та же таблица для Google Sheets/Excel
+reports/developer/daily/YYYY-MM-DD/         дневной срез новых/активных/решённых проблем
+reports/developer/state/issues.json         техническое состояние дедупликации
+```
+
+В Google Drive файлы складываются в структуру:
+
+```text
+<папка из GOOGLE_DRIVE_FOLDER_ID>/<site>/active/
+<папка из GOOGLE_DRIVE_FOLDER_ID>/<site>/daily/YYYY-MM-DD/
+```
+
+Для разработчика обычно достаточно отправить дневную папку `daily/YYYY-MM-DD` или файл `QA_ACTIVE_ISSUES.csv`.
 
 ## Настройки
 
@@ -115,6 +155,23 @@ GOOGLE_DRIVE_ENABLED=true
 GOOGLE_DRIVE_FOLDER_ID=1vK3PE6VHTx-_BM-0VU0NdO8kuDr9Cg95
 GOOGLE_SERVICE_ACCOUNT_JSON=/home/qa-agent/google-service-account.json
 ```
+
+## Email-отчёты
+
+Email-канал опциональный. Для Gmail нужен пароль приложения, обычный пароль аккаунта Google не подойдёт.
+
+```text
+EMAIL_ENABLED=true
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_SECURE=false
+EMAIL_SMTP_USER=ваш_email@gmail.com
+EMAIL_SMTP_PASS=пароль_приложения
+EMAIL_FROM=ваш_email@gmail.com
+EMAIL_TO=flycited2@gmail.com
+```
+
+Если `EMAIL_ENABLED=false`, агент просто пропускает отправку почты и продолжает Telegram/Drive.
 
 ## Важная логика безопасности
 

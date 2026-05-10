@@ -22,6 +22,10 @@ run_full() {
   npm run qa:run:full || true
 }
 
+is_paused() {
+  [ -f storage/control.json ] && grep -q '"paused"[[:space:]]*:[[:space:]]*true' storage/control.json
+}
+
 if [ "${QA_MODE}" = "smoke" ]; then run_smoke; exit 0; fi
 if [ "${QA_MODE}" = "critical" ]; then run_critical; exit 0; fi
 if [ "${QA_MODE}" = "full" ]; then run_full; exit 0; fi
@@ -38,6 +42,12 @@ last_critical=0
 last_full_day=""
 
 while true; do
+  if is_paused; then
+    echo "[$(date)] QA Agent paused by Telegram command"
+    sleep 60
+    continue
+  fi
+
   now=$(date +%s)
   hour=$(date +%H)
   day=$(date +%F)

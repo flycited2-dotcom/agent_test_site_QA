@@ -12,4 +12,4 @@ services:
     restart: unless-stopped
     network_mode: host
     shm_size: "1gb"
-    command: bash scripts/agent-loop.sh
+    command: bash -lc "npm run qa:bot & bash scripts/agent-loop.sh"

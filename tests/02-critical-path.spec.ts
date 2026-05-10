@@ -3,6 +3,8 @@ import { clickConsentIfPresent, fillLikelyForm, findProductLinks, safeClick, wai
 import { config } from '../src/utils/config';
 
 test.describe('Critical path: каталог → карточка → корзина → оформление', () => {
+  test.skip(['landing', 'content'].includes(config.siteProfile), 'Коммерческий путь запускается только для auto/catalog/shop профилей');
+
   test('агент находит товар и пытается пройти путь клиента до безопасного финального шага', async ({ page }, testInfo) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
