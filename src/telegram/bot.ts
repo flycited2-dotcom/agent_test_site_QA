@@ -169,8 +169,10 @@ async function handle(text: string): Promise<void> {
 
   if (command.type === 'status') {
     const activePath = path.resolve('reports/developer/QA_ACTIVE_ISSUES.md');
+    const coveragePath = path.resolve('reports/developer/QA_COVERAGE.md');
     const active = fs.existsSync(activePath) ? fs.readFileSync(activePath, 'utf8') : 'Активный отчёт ещё не создан.';
-    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nРежим расписания: ${runtime.site.depth}\n\n${active.slice(0, 2500)}`, mainKeyboard(runtime));
+    const coverage = fs.existsSync(coveragePath) ? fs.readFileSync(coveragePath, 'utf8') : 'Отчёт покрытия ещё не создан.';
+    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nРежим расписания: ${runtime.site.depth}\n\n${active.slice(0, 1400)}\n\n${coverage.slice(0, 1400)}`, mainKeyboard(runtime));
     return;
   }
 
