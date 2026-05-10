@@ -10,6 +10,7 @@ export type BotCommand =
   | { type: 'site'; url: string }
   | { type: 'profile'; profile: SiteProfile }
   | { type: 'depth'; depth: TestDepth }
+  | { type: 'menu' }
   | { type: 'help' }
   | { type: 'unknown'; text: string };
 
@@ -31,6 +32,7 @@ export function parseCommand(text: string): BotCommand {
   const command = rawCommand?.toLowerCase();
   const arg = rest.join(' ').trim();
 
+  if (command === '/меню' || command === '/start') return { type: 'menu' };
   if (command === '/статус' || command === '/сводка') return { type: 'status' };
   if (command === '/отчет' || command === '/отчёт') return { type: 'report' };
   if (command === '/пауза' || command === '/стоп') return { type: 'pause' };
@@ -39,7 +41,7 @@ export function parseCommand(text: string): BotCommand {
   if (command === '/помощь' || command === '/help') return { type: 'help' };
 
   if (command === '/запуск') return { type: 'run', depth: normalizeDepth(arg || 'smoke') };
-  if (command === '/глубина') return { type: 'depth', depth: normalizeDepth(arg) };
+  if (command === '/глубина' || command === '/режим') return { type: 'depth', depth: normalizeDepth(arg) };
   if (command === '/профиль') return { type: 'profile', profile: profileAliases[arg.toLowerCase()] || normalizeProfile(arg) };
   if (command === '/сайт') return { type: 'site', url: arg };
 
@@ -49,12 +51,14 @@ export function parseCommand(text: string): BotCommand {
 export function helpText(): string {
   return [
     'Команды QA Agent:',
+    '/меню — открыть кнопки управления',
     '/статус — текущий сайт, профиль, активные проблемы',
     '/отчет — прислать developer-отчёты',
     '/запуск smoke|critical|full — запустить проверку',
     '/сайт https://example.com — переключить сайт',
     '/профиль авто|лендинг|сайт|каталог|магазин — выбрать профиль',
-    '/глубина smoke|critical|full — глубина по умолчанию',
+    '/глубина smoke|critical|full — режим расписания',
+    '/режим smoke|critical|full — то же самое',
     '/пауза — остановить расписание',
     '/продолжить — продолжить расписание',
     '/перезапуск — продолжить расписание и запустить проверку по текущей глубине',

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import dotenv from 'dotenv';
 import { parseCommand, helpText } from './commands';
-import { readRuntimeConfig, writeRuntimeConfig, updateRuntimeSite } from '../utils/runtime-config';
+import { normalizeDepth, normalizeProfile, readRuntimeConfig, writeRuntimeConfig, updateRuntimeSite, type RuntimeConfig, type SiteProfile, type TestDepth } from '../utils/runtime-config';
 import { listReportFiles, todayIso } from '../reporters/report-files';
 
 dotenv.config();
@@ -18,9 +18,81 @@ if (!token || !chatId) {
   process.exit(0);
 }
 
+type ReplyMarkup = {
+  inline_keyboard: Array<Array<{ text: string; callback_data: string }>>;
+};
+
 function writeControl(value: Record<string, unknown>): void {
   fs.mkdirSync(path.dirname(controlPath), { recursive: true });
   fs.writeFileSync(controlPath, JSON.stringify(value, null, 2), 'utf8');
+}
+
+function mainKeyboard(runtime = readRuntimeConfig()): ReplyMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: 'Статус', callback_data: 'status' },
+        { text: 'Отчёт', callback_data: 'report' }
+      ],
+      [
+        { text: `Режим: ${runtime.site.depth}`, callback_data: 'menu:mode' },
+        { text: `Профиль: ${runtime.site.profile}`, callback_data: 'menu:profile' }
+      ],
+      [
+        { text: 'Запустить сейчас', callback_data: 'menu:run' },
+        { text: 'Перезапуск', callback_data: 'restart' }
+      ],
+      [
+        { text: 'Пауза', callback_data: 'pause' },
+        { text: 'Продолжить', callback_data: 'resume' }
+      ]
+    ]
+  };
+}
+
+function modeKeyboard(): ReplyMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: 'Smoke', callback_data: 'mode:smoke' },
+        { text: 'Critical', callback_data: 'mode:critical' },
+        { text: 'Full', callback_data: 'mode:full' }
+      ],
+      [{ text: 'Назад', callback_data: 'menu:main' }]
+    ]
+  };
+}
+
+function runKeyboard(): ReplyMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: 'Smoke сейчас', callback_data: 'run:smoke' },
+        { text: 'Critical сейчас', callback_data: 'run:critical' }
+      ],
+      [
+        { text: 'Full сейчас', callback_data: 'run:full' },
+        { text: 'Назад', callback_data: 'menu:main' }
+      ]
+    ]
+  };
+}
+
+function profileKeyboard(): ReplyMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: 'Авто', callback_data: 'profile:auto' },
+        { text: 'Лендинг', callback_data: 'profile:landing' }
+      ],
+      [
+        { text: 'Контент', callback_data: 'profile:content' },
+        { text: 'Каталог', callback_data: 'profile:catalog' },
+        { text: 'Магазин', callback_data: 'profile:shop' }
+      ],
+      [{ text: 'Назад', callback_data: 'menu:main' }]
+    ]
+  };
 }
 
 async function telegram(method: string, body: Record<string, unknown> | FormData): Promise<any> {
@@ -34,8 +106,12 @@ async function telegram(method: string, body: Record<string, unknown> | FormData
   return res.json();
 }
 
-async function sendMessage(text: string): Promise<void> {
-  await telegram('sendMessage', { chat_id: chatId, text });
+async function sendMessage(text: string, replyMarkup?: ReplyMarkup): Promise<void> {
+  await telegram('sendMessage', { chat_id: chatId, text, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) });
+}
+
+async function answerCallback(callbackQueryId: string): Promise<void> {
+  await telegram('answerCallbackQuery', { callback_query_id: callbackQueryId });
 }
 
 async function sendDocument(filePath: string): Promise<void> {
@@ -51,70 +127,142 @@ function runCommand(command: string, args: string[]): void {
   child.unref();
 }
 
+function setDepth(runtime: RuntimeConfig, depth: TestDepth): RuntimeConfig {
+  runtime.site.depth = depth;
+  writeRuntimeConfig(runtime);
+  return runtime;
+}
+
+function setProfile(runtime: RuntimeConfig, profile: SiteProfile): RuntimeConfig {
+  runtime.site.profile = profile;
+  writeRuntimeConfig(runtime);
+  return runtime;
+}
+
+async function sendMenu(): Promise<void> {
+  const runtime = readRuntimeConfig();
+  await sendMessage([
+    'Панель QA Agent',
+    `Сайт: ${runtime.site.url}`,
+    `Режим расписания: ${runtime.site.depth}`,
+    `Профиль: ${runtime.site.profile}`
+  ].join('\n'), mainKeyboard(runtime));
+}
+
 async function handle(text: string): Promise<void> {
   const command = parseCommand(text);
   const runtime = readRuntimeConfig();
 
+  if (command.type === 'menu') {
+    await sendMenu();
+    return;
+  }
+
   if (command.type === 'status') {
     const activePath = path.resolve('reports/developer/QA_ACTIVE_ISSUES.md');
     const active = fs.existsSync(activePath) ? fs.readFileSync(activePath, 'utf8') : 'Активный отчёт ещё не создан.';
-    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nГлубина: ${runtime.site.depth}\n\n${active.slice(0, 2500)}`);
+    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nРежим расписания: ${runtime.site.depth}\n\n${active.slice(0, 2500)}`, mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'report') {
     const files = listReportFiles(todayIso());
     for (const file of files) await sendDocument(file.path);
-    await sendMessage(files.length ? 'Отчёты отправлены.' : 'Отчёты ещё не созданы. Запустите /запуск smoke.');
+    await sendMessage(files.length ? 'Отчёты отправлены.' : 'Отчёты ещё не созданы. Запустите /запуск smoke.', mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'run') {
     runCommand('npm', ['run', `qa:run:${command.depth}`]);
-    await sendMessage(`Запустил проверку: ${command.depth}`);
+    await sendMessage(`Запустил проверку: ${command.depth}`, mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'pause') {
     writeControl({ paused: true, updatedAt: new Date().toISOString() });
-    await sendMessage('Расписание поставлено на паузу.');
+    await sendMessage('Расписание поставлено на паузу.', mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'resume') {
     writeControl({ paused: false, updatedAt: new Date().toISOString() });
-    await sendMessage('Расписание продолжено.');
+    await sendMessage('Расписание продолжено.', mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'restart') {
     writeControl({ paused: false, restartedAt: new Date().toISOString() });
     runCommand('npm', ['run', `qa:run:${runtime.site.depth}`]);
-    await sendMessage(`Перезапустил агента и запустил проверку: ${runtime.site.depth}`);
+    await sendMessage(`Перезапустил агента и запустил проверку: ${runtime.site.depth}`, mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'site') {
     const next = updateRuntimeSite(command.url);
-    await sendMessage(`Сайт переключён: ${next.site.url}\nПрофиль: ${next.site.profile}`);
+    await sendMessage(`Сайт переключён: ${next.site.url}\nПрофиль: ${next.site.profile}`, mainKeyboard(next));
     return;
   }
 
   if (command.type === 'profile') {
-    runtime.site.profile = command.profile;
-    writeRuntimeConfig(runtime);
-    await sendMessage(`Профиль установлен: ${command.profile}`);
+    setProfile(runtime, command.profile);
+    await sendMessage(`Профиль установлен: ${command.profile}`, mainKeyboard(runtime));
     return;
   }
 
   if (command.type === 'depth') {
-    runtime.site.depth = command.depth;
-    writeRuntimeConfig(runtime);
-    await sendMessage(`Глубина установлена: ${command.depth}`);
+    setDepth(runtime, command.depth);
+    await sendMessage(`Режим расписания установлен: ${command.depth}`, mainKeyboard(runtime));
     return;
   }
 
-  await sendMessage(helpText());
+  await sendMessage(helpText(), mainKeyboard(runtime));
+}
+
+async function handleCallback(data: string, callbackQueryId: string): Promise<void> {
+  await answerCallback(callbackQueryId);
+  const runtime = readRuntimeConfig();
+
+  if (data === 'menu:main') {
+    await sendMenu();
+    return;
+  }
+  if (data === 'menu:mode') {
+    await sendMessage('Выберите режим расписания. После выбора планировщик будет запускать только этот тип проверки.', modeKeyboard());
+    return;
+  }
+  if (data === 'menu:run') {
+    await sendMessage('Какую проверку запустить прямо сейчас?', runKeyboard());
+    return;
+  }
+  if (data === 'menu:profile') {
+    await sendMessage('Выберите профиль сайта.', profileKeyboard());
+    return;
+  }
+  if (data.startsWith('mode:')) {
+    const depth = normalizeDepth(data.slice('mode:'.length));
+    setDepth(runtime, depth);
+    await sendMessage(`Режим расписания установлен: ${depth}`, mainKeyboard(runtime));
+    return;
+  }
+  if (data.startsWith('run:')) {
+    const depth = normalizeDepth(data.slice('run:'.length));
+    runCommand('npm', ['run', `qa:run:${depth}`]);
+    await sendMessage(`Запустил проверку: ${depth}`, mainKeyboard(runtime));
+    return;
+  }
+  if (data.startsWith('profile:')) {
+    const profile = normalizeProfile(data.slice('profile:'.length));
+    setProfile(runtime, profile);
+    await sendMessage(`Профиль установлен: ${profile}`, mainKeyboard(runtime));
+    return;
+  }
+
+  if (data === 'status') await handle('/статус');
+  else if (data === 'report') await handle('/отчет');
+  else if (data === 'pause') await handle('/пауза');
+  else if (data === 'resume') await handle('/продолжить');
+  else if (data === 'restart') await handle('/перезапуск');
+  else await sendMenu();
 }
 
 async function poll(): Promise<void> {
@@ -126,6 +274,12 @@ async function poll(): Promise<void> {
         offset = update.update_id + 1;
         fs.mkdirSync(path.dirname(offsetPath), { recursive: true });
         fs.writeFileSync(offsetPath, String(offset), 'utf8');
+        const callback = update.callback_query;
+        if (callback && String(callback.message?.chat?.id) === String(chatId) && callback.data) {
+          await handleCallback(callback.data, callback.id);
+          continue;
+        }
+
         const message = update.message;
         if (!message || String(message.chat?.id) !== String(chatId) || !message.text) continue;
         await handle(message.text);
