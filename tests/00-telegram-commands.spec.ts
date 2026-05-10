@@ -8,6 +8,7 @@ test('parses Russian Telegram commands', () => {
   expect(parseCommand('/запуск critical')).toEqual({ type: 'run', depth: 'critical' });
   expect(parseCommand('/режим full')).toEqual({ type: 'depth', depth: 'full' });
   expect(parseCommand('/меню')).toEqual({ type: 'menu' });
+  expect(parseCommand('/star')).toEqual({ type: 'menu' });
   expect(parseCommand('/сайт https://example.com')).toEqual({ type: 'site', url: 'https://example.com' });
   expect(parseCommand('/профиль магазин')).toEqual({ type: 'profile', profile: 'shop' });
 });

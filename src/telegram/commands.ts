@@ -32,7 +32,7 @@ export function parseCommand(text: string): BotCommand {
   const command = rawCommand?.toLowerCase();
   const arg = rest.join(' ').trim();
 
-  if (command === '/меню' || command === '/start') return { type: 'menu' };
+  if (command === '/меню' || command === '/start' || command === '/star') return { type: 'menu' };
   if (command === '/статус' || command === '/сводка') return { type: 'status' };
   if (command === '/отчет' || command === '/отчёт') return { type: 'report' };
   if (command === '/пауза' || command === '/стоп') return { type: 'pause' };
