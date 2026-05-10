@@ -35,9 +35,9 @@ function mainKeyboard(runtime = readRuntimeConfig()): ReplyMarkup {
         { text: 'Отчёт', callback_data: 'report' }
       ],
       [
-        { text: runtime.site.depth === 'smoke' ? '✓ Smoke' : 'Smoke', callback_data: 'mode:smoke' },
-        { text: runtime.site.depth === 'critical' ? '✓ Critical' : 'Critical', callback_data: 'mode:critical' },
-        { text: runtime.site.depth === 'full' ? '✓ Full' : 'Full', callback_data: 'mode:full' }
+        { text: runtime.site.depth === 'smoke' ? 'Smoke активен' : 'Smoke', callback_data: 'mode:smoke' },
+        { text: runtime.site.depth === 'critical' ? 'Critical активен' : 'Critical', callback_data: 'mode:critical' },
+        { text: runtime.site.depth === 'full' ? 'Full активен' : 'Full', callback_data: 'mode:full' }
       ],
       [
         { text: 'Smoke сейчас', callback_data: 'run:smoke' },
