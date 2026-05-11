@@ -1,4 +1,4 @@
-import { normalizeDepth, normalizeProfile, type SiteProfile, type TestDepth } from '../utils/runtime-config';
+import { normalizeDepth, normalizeProfile, type RuntimeConfig, type SiteProfile, type TestDepth } from '../utils/runtime-config';
 
 export type BotCommand =
   | { type: 'status' }
@@ -46,6 +46,16 @@ export function parseCommand(text: string): BotCommand {
   if (command === '/сайт') return { type: 'site', url: arg };
 
   return { type: 'unknown', text };
+}
+
+export function runtimeAfterManualRun(runtime: RuntimeConfig, depth: TestDepth): RuntimeConfig {
+  return {
+    ...runtime,
+    site: {
+      ...runtime.site,
+      depth
+    }
+  };
 }
 
 export function helpText(): string {

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import dotenv from 'dotenv';
-import { parseCommand, helpText } from './commands';
+import { parseCommand, helpText, runtimeAfterManualRun } from './commands';
 import { normalizeDepth, normalizeProfile, readRuntimeConfig, writeRuntimeConfig, updateRuntimeSite, type RuntimeConfig, type SiteProfile, type TestDepth } from '../utils/runtime-config';
 import { listReportFiles, todayIso } from '../reporters/report-files';
 
@@ -184,8 +184,9 @@ async function handle(text: string): Promise<void> {
   }
 
   if (command.type === 'run') {
+    const next = setDepth(runtimeAfterManualRun(runtime, command.depth), command.depth);
     runCommand('npm', ['run', `qa:run:${command.depth}`]);
-    await sendMessage(`Запустил проверку: ${command.depth}`, mainKeyboard(runtime));
+    await sendMessage(`Режим установлен и запущена проверка: ${command.depth}`, mainKeyboard(next));
     return;
   }
 
@@ -257,8 +258,9 @@ async function handleCallback(data: string, callbackQueryId: string): Promise<vo
   }
   if (data.startsWith('run:')) {
     const depth = normalizeDepth(data.slice('run:'.length));
+    const next = setDepth(runtimeAfterManualRun(runtime, depth), depth);
     runCommand('npm', ['run', `qa:run:${depth}`]);
-    await sendMessage(`Запустил проверку: ${depth}`, mainKeyboard(runtime));
+    await sendMessage(`Режим установлен и запущена проверка: ${depth}`, mainKeyboard(next));
     return;
   }
   if (data.startsWith('profile:')) {

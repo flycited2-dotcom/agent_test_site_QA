@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { parseCommand } from '../src/telegram/commands';
+import { parseCommand, runtimeAfterManualRun } from '../src/telegram/commands';
 
 test('parses Russian Telegram commands', () => {
   expect(parseCommand('/статус')).toEqual({ type: 'status' });
@@ -11,4 +11,22 @@ test('parses Russian Telegram commands', () => {
   expect(parseCommand('/star')).toEqual({ type: 'menu' });
   expect(parseCommand('/сайт https://example.com')).toEqual({ type: 'site', url: 'https://example.com' });
   expect(parseCommand('/профиль магазин')).toEqual({ type: 'profile', profile: 'shop' });
+});
+
+test('manual run also switches the active schedule depth', () => {
+  const runtime = {
+    site: {
+      url: 'https://example.com/',
+      profile: 'shop' as const,
+      depth: 'critical' as const,
+      safeMode: true
+    },
+    notifications: {
+      telegram: true,
+      googleDrive: true,
+      email: false
+    }
+  };
+
+  expect(runtimeAfterManualRun(runtime, 'full').site.depth).toBe('full');
 });
