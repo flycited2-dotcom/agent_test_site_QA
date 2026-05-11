@@ -2,6 +2,7 @@
 set -e
 export TZ=${TIMEZONE:-Europe/Moscow}
 mkdir -p reports/html reports/json reports/markdown test-results storage
+rm -f storage/run.lock.json
 
 echo "QA Agent запущен для ${BASE_URL}"
 echo "Режим: ${QA_MODE}"

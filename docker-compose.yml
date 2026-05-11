@@ -10,6 +10,7 @@ services:
       - ./storage:/app/storage
       - ./secrets:/app/secrets:ro
     restart: unless-stopped
+    stop_grace_period: 120s
     network_mode: host
     shm_size: "1gb"
     command: bash -lc "npm run qa:bot & bash scripts/agent-loop.sh"
