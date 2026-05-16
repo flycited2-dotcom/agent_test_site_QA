@@ -40,9 +40,15 @@ function mainKeyboard(runtime = readRuntimeConfig()): ReplyMarkup {
         { text: runtime.site.depth === 'full' ? 'Full активен' : 'Full', callback_data: 'mode:full' }
       ],
       [
+        { text: runtime.site.depth === 'enterprise' ? 'Enterprise активен' : 'Enterprise', callback_data: 'mode:enterprise' }
+      ],
+      [
         { text: 'Smoke сейчас', callback_data: 'run:smoke' },
         { text: 'Critical сейчас', callback_data: 'run:critical' },
         { text: 'Full сейчас', callback_data: 'run:full' }
+      ],
+      [
+        { text: 'Enterprise сейчас', callback_data: 'run:enterprise' }
       ],
       [
         { text: `Профиль: ${runtime.site.profile}`, callback_data: 'menu:profile' }
@@ -67,6 +73,9 @@ function modeKeyboard(): ReplyMarkup {
         { text: 'Critical', callback_data: 'mode:critical' },
         { text: 'Full', callback_data: 'mode:full' }
       ],
+      [
+        { text: 'Enterprise', callback_data: 'mode:enterprise' }
+      ],
       [{ text: 'Назад', callback_data: 'menu:main' }]
     ]
   };
@@ -82,6 +91,9 @@ function runKeyboard(): ReplyMarkup {
       [
         { text: 'Full сейчас', callback_data: 'run:full' },
         { text: 'Назад', callback_data: 'menu:main' }
+      ],
+      [
+        { text: 'Enterprise сейчас', callback_data: 'run:enterprise' }
       ]
     ]
   };
@@ -154,7 +166,10 @@ async function sendMenu(): Promise<void> {
     'Панель QA Agent',
     `Сайт: ${runtime.site.url}`,
     `Режим расписания: ${runtime.site.depth}`,
-    `Профиль: ${runtime.site.profile}`
+    `Профиль: ${runtime.site.profile}`,
+    runtime.site.depth === 'enterprise'
+      ? 'Enterprise: сверхглубокий аудит каталога, карточек, фильтров, форм, заявок и контактов.'
+      : 'Для максимального аудита выберите Enterprise.'
   ].join('\n'), mainKeyboard(runtime));
 }
 

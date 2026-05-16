@@ -17,6 +17,7 @@ export type ReportModel = {
     total: number;
     passed: number;
     failed: number;
+    skipped?: number;
   };
   rows: ReportRow[];
 };
@@ -27,6 +28,7 @@ type PlaywrightResult = {
 };
 
 type PlaywrightTest = {
+  status?: string;
   results?: PlaywrightResult[];
 };
 
@@ -65,12 +67,21 @@ export function stripAnsi(text: string): string {
 export function buildReportModel(data: PlaywrightJson, site: string, mode: string, date = new Date().toISOString()): ReportModel {
   const rows: ReportRow[] = [];
 
+  function rowStatus(test: PlaywrightTest): string {
+    if (test.status === 'expected') return 'passed';
+    if (test.status === 'unexpected') return 'failed';
+    if (test.status === 'skipped') return 'skipped';
+    const last = test.results?.at(-1);
+    if (last?.status === 'passed') return 'passed';
+    if (last?.status === 'failed' || last?.status === 'timedOut' || last?.status === 'interrupted') return 'failed';
+    return last?.status || 'unknown';
+  }
+
   function walk(suites: PlaywrightSuite[]) {
     for (const suite of suites || []) {
       for (const spec of suite.specs || []) {
         for (const test of spec.tests || []) {
-          const last = test.results?.at(-1);
-          const status = last?.status || 'unknown';
+          const status = rowStatus(test);
           const title = spec.title || 'Без названия';
           const details = (test.results || [])
             .flatMap(result => result.errors || [])
@@ -102,7 +113,8 @@ export function buildReportModel(data: PlaywrightJson, site: string, mode: strin
   walk(data.suites || []);
 
   const passed = rows.filter(row => row.status === 'passed').length;
-  const failed = rows.length - passed;
+  const skipped = rows.filter(row => row.status === 'skipped').length;
+  const failed = rows.filter(row => !['passed', 'skipped'].includes(row.status)).length;
   const statsTotal = (data.stats?.expected || 0) + (data.stats?.unexpected || 0) + (data.stats?.flaky || 0) + (data.stats?.skipped || 0);
 
   return {
@@ -112,7 +124,8 @@ export function buildReportModel(data: PlaywrightJson, site: string, mode: strin
       mode,
       total: rows.length || statsTotal,
       passed,
-      failed
+      failed,
+      skipped
     },
     rows
   };

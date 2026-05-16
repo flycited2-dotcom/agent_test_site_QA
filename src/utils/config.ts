@@ -3,17 +3,24 @@ import { readRuntimeConfig } from './runtime-config';
 dotenv.config();
 
 const runtime = readRuntimeConfig(process.env.BASE_URL || 'https://climat-simf.ru/');
+const qaMode = process.env.QA_MODE || 'smoke';
+const enterpriseMode = qaMode === 'enterprise' || runtime.site.depth === 'enterprise';
+
+function numberSetting(name: string, fallback: number): number {
+  return Number(process.env[name] || fallback);
+}
 
 export const config = {
   baseUrl: runtime.site.url,
   siteProfile: runtime.site.profile,
   testDepth: runtime.site.depth,
   safeMode: runtime.site.safeMode,
-  maxProductsFull: Number(process.env.MAX_PRODUCTS_FULL || 300),
-  maxProductsSmoke: Number(process.env.MAX_PRODUCTS_SMOKE || 8),
-  maxCategoryPages: Number(process.env.MAX_CATEGORY_PAGES || 80),
-  actionDelayMs: Number(process.env.ACTION_DELAY_MS || 150),
-  qaMode: process.env.QA_MODE || 'smoke',
+  maxProductsFull: numberSetting('MAX_PRODUCTS_FULL', enterpriseMode ? 1200 : 300),
+  maxProductsSmoke: numberSetting('MAX_PRODUCTS_SMOKE', enterpriseMode ? 30 : 8),
+  maxCategoryPages: numberSetting('MAX_CATEGORY_PAGES', enterpriseMode ? 350 : 80),
+  actionDelayMs: numberSetting('ACTION_DELAY_MS', enterpriseMode ? 250 : 150),
+  qaMode,
+  auditScale: enterpriseMode ? 'enterprise-30x' : 'standard',
   testUser: {
     name: process.env.QA_TEST_NAME || 'QA TEST',
     phone: process.env.QA_TEST_PHONE || '+79990000000',

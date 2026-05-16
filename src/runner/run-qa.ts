@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { TestDepth } from '../utils/runtime-config';
 
 const depth = (process.argv[2] || 'smoke') as TestDepth;
-const allowed: TestDepth[] = ['smoke', 'critical', 'full'];
+const allowed: TestDepth[] = ['smoke', 'critical', 'full', 'enterprise'];
 const lockPath = path.resolve('storage/run.lock.json');
 
 if (!allowed.includes(depth)) {

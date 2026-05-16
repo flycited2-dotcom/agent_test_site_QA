@@ -42,6 +42,8 @@ md += `- Успешно: ${model.summary.passed}
 `;
 md += `- Ошибки: ${model.summary.failed}
 `;
+md += `- Пропущено: ${model.summary.skipped || 0}
+`;
 md += `- Режим: ${model.summary.mode}
 
 `;
@@ -50,7 +52,7 @@ md += `Покрытие запуска: reports/developer/QA_COVERAGE.md
 
 `;
 
-const failed = model.rows.filter(row => row.status !== 'passed');
+const failed = model.rows.filter(row => !['passed', 'skipped'].includes(row.status));
 if (failed.length) {
   md += `## Ошибки и задачи разработчику
 

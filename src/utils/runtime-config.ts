@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export type SiteProfile = 'auto' | 'landing' | 'content' | 'catalog' | 'shop';
-export type TestDepth = 'smoke' | 'critical' | 'full';
+export type TestDepth = 'smoke' | 'critical' | 'full' | 'enterprise';
 
 export type RuntimeConfig = {
   site: {
@@ -27,7 +27,7 @@ export function normalizeProfile(value: unknown): SiteProfile {
 }
 
 export function normalizeDepth(value: unknown): TestDepth {
-  return ['smoke', 'critical', 'full'].includes(String(value))
+  return ['smoke', 'critical', 'full', 'enterprise'].includes(String(value))
     ? String(value) as TestDepth
     : 'smoke';
 }

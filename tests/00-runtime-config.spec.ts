@@ -17,3 +17,10 @@ test('runtime config falls back to safe defaults', () => {
   expect(normalizeDepth('bad')).toBe('smoke');
   expect(mergeRuntimeConfig({}, 'https://fallback.test').site.url).toBe('https://fallback.test/');
 });
+
+test('runtime config supports enterprise depth for maximum audit runs', () => {
+  expect(normalizeDepth('enterprise')).toBe('enterprise');
+  expect(mergeRuntimeConfig({
+    site: { url: 'https://example.com', profile: 'shop', depth: 'enterprise', safeMode: true }
+  }, 'https://fallback.test/').site.depth).toBe('enterprise');
+});

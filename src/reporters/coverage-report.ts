@@ -29,6 +29,9 @@ function modeExplanation(mode: string): string {
   if (mode === 'full') {
     return 'Full запускает весь набор проверок, включая глубокий commerce-аудит каталога, фильтров, сортировок, карточек, заявок и контактов.';
   }
+  if (mode === 'enterprise') {
+    return 'Enterprise запускает максимальный аудит: расширенный обход каталога и карточек, больше категорий, товаров, фильтров, сортировок, поисковых запросов, форм, заявок и контактов. Это режим для ночного или ручного тяжёлого запуска.';
+  }
   return 'Ручной или служебный запуск. Смотрите список spec-файлов ниже, чтобы понять фактическое покрытие.';
 }
 
@@ -70,6 +73,7 @@ export function buildCoverageReport(model: ReportModel, artifacts: CoverageArtif
   markdown += `- Всего проверок: ${model.summary.total}\n`;
   markdown += `- Успешно: ${model.summary.passed}\n`;
   markdown += `- Ошибки: ${model.summary.failed}\n\n`;
+  markdown += `- Пропущено: ${model.summary.skipped || 0}\n\n`;
 
   markdown += `## Запущенные зоны\n\n`;
   if (!specs.length) {
@@ -83,8 +87,8 @@ export function buildCoverageReport(model: ReportModel, artifacts: CoverageArtif
 
   markdown += `## Глубокий commerce-аудит\n\n`;
   if (!deepSteps.length) {
-    markdown += model.summary.mode === 'full'
-      ? `Артефакты deep-аудита не найдены. Это нужно проверить по HTML/trace отчёту: full должен создавать deep-catalog-steps.txt.\n`
+    markdown += ['full', 'enterprise'].includes(model.summary.mode)
+      ? `Артефакты deep-аудита не найдены. Это нужно проверить по HTML/trace отчёту: ${model.summary.mode} должен создавать deep-catalog-steps.txt.\n`
       : `Deep-аудит ассортимента не запускался в этом режиме. Для полного обхода нажмите в боте "Full сейчас".\n`;
   } else {
     markdown += `Шагов deep-аудита: ${deepSteps.length}\n\n`;

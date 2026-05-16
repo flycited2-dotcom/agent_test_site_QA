@@ -23,30 +23,41 @@ run_full() {
   npm run qa:run:full || true
 }
 
+run_enterprise() {
+  echo "[$(date)] Enterprise run"
+  npm run qa:discover || true
+  npm run qa:run:enterprise || true
+}
+
 is_paused() {
   [ -f storage/control.json ] && grep -q '"paused"[[:space:]]*:[[:space:]]*true' storage/control.json
 }
 
 current_depth() {
-  node -e "const fs=require('fs'); const p='storage/runtime-config.json'; let d='smoke'; try { if (fs.existsSync(p)) d=JSON.parse(fs.readFileSync(p,'utf8')).site?.depth || d; } catch {} if (!['smoke','critical','full'].includes(d)) d='smoke'; process.stdout.write(d);"
+  node -e "const fs=require('fs'); const p='storage/runtime-config.json'; let d='smoke'; try { if (fs.existsSync(p)) d=JSON.parse(fs.readFileSync(p,'utf8')).site?.depth || d; } catch {} if (!['smoke','critical','full','enterprise'].includes(d)) d='smoke'; process.stdout.write(d);"
 }
 
 if [ "${QA_MODE}" = "smoke" ]; then run_smoke; exit 0; fi
 if [ "${QA_MODE}" = "critical" ]; then run_critical; exit 0; fi
 if [ "${QA_MODE}" = "full" ]; then run_full; exit 0; fi
+if [ "${QA_MODE}" = "enterprise" ]; then run_enterprise; exit 0; fi
 if [ "${QA_MODE}" != "loop" ]; then
-  echo "Неверный QA_MODE: ${QA_MODE}. Используйте smoke, critical, full или loop."
+  echo "Неверный QA_MODE: ${QA_MODE}. Используйте smoke, critical, full, enterprise или loop."
   exit 2
 fi
 
 SMOKE_INTERVAL=${SMOKE_INTERVAL_MINUTES:-30}
 CRITICAL_INTERVAL=${CRITICAL_INTERVAL_MINUTES:-120}
 FULL_INTERVAL=${FULL_INTERVAL_MINUTES:-360}
+ENTERPRISE_INTERVAL=${ENTERPRISE_INTERVAL_MINUTES:-720}
 FULL_HOUR=${FULL_RUN_HOUR:-3}
+ENTERPRISE_HOUR=${ENTERPRISE_RUN_HOUR:-2}
 last_smoke=0
 last_critical=0
 last_full=0
+last_enterprise=0
 last_full_day=""
+last_enterprise_day=""
 
 while true; do
   if is_paused; then
@@ -78,6 +89,16 @@ while true; do
     run_full
     last_full=$now
     last_full_day=$day
+  fi
+
+  if [ "$depth" = "enterprise" ] && [ $(( (now-last_enterprise)/60 )) -ge "$ENTERPRISE_INTERVAL" ]; then
+    run_enterprise
+    last_enterprise=$now
+    last_enterprise_day=$day
+  elif [ "$depth" = "enterprise" ] && [ "$hour" = "$(printf '%02d' $ENTERPRISE_HOUR)" ] && [ "$last_enterprise_day" != "$day" ]; then
+    run_enterprise
+    last_enterprise=$now
+    last_enterprise_day=$day
   fi
 
   sleep 60

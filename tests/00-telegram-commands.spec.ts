@@ -6,7 +6,9 @@ test('parses Russian Telegram commands', () => {
   expect(parseCommand('/отчёт')).toEqual({ type: 'report' });
   expect(parseCommand('/отчет')).toEqual({ type: 'report' });
   expect(parseCommand('/запуск critical')).toEqual({ type: 'run', depth: 'critical' });
+  expect(parseCommand('/запуск enterprise')).toEqual({ type: 'run', depth: 'enterprise' });
   expect(parseCommand('/режим full')).toEqual({ type: 'depth', depth: 'full' });
+  expect(parseCommand('/режим enterprise')).toEqual({ type: 'depth', depth: 'enterprise' });
   expect(parseCommand('/меню')).toEqual({ type: 'menu' });
   expect(parseCommand('/star')).toEqual({ type: 'menu' });
   expect(parseCommand('/сайт https://example.com')).toEqual({ type: 'site', url: 'https://example.com' });
@@ -28,5 +30,5 @@ test('manual run also switches the active schedule depth', () => {
     }
   };
 
-  expect(runtimeAfterManualRun(runtime, 'full').site.depth).toBe('full');
+  expect(runtimeAfterManualRun(runtime, 'enterprise').site.depth).toBe('enterprise');
 });

@@ -14,9 +14,10 @@ export type DeepStep = {
   detail: string;
 };
 
-const productLimit = Number(process.env.MAX_DEEP_PRODUCT_URLS || Math.min(config.maxProductsFull, 80));
-const catalogLimit = Number(process.env.MAX_DEEP_CATALOG_URLS || Math.min(config.maxCategoryPages, 40));
-const auditBudgetMs = Number(process.env.DEEP_AUDIT_BUDGET_MS || 30 * 60 * 1000);
+const enterpriseMode = config.qaMode === 'enterprise' || config.testDepth === 'enterprise';
+const productLimit = Number(process.env.MAX_DEEP_PRODUCT_URLS || Math.min(config.maxProductsFull, enterpriseMode ? 1200 : 80));
+const catalogLimit = Number(process.env.MAX_DEEP_CATALOG_URLS || Math.min(config.maxCategoryPages, enterpriseMode ? 350 : 40));
+const auditBudgetMs = Number(process.env.DEEP_AUDIT_BUDGET_MS || (enterpriseMode ? 6 * 60 * 60 * 1000 : 30 * 60 * 1000));
 const auditStartedAt = Date.now();
 const searchTerms = (process.env.QA_SEARCH_TERMS || 'кондиционер,товар,услуга')
   .split(',')
@@ -125,7 +126,7 @@ export async function auditCatalogNavigation(page: Page, catalogUrls: string[], 
       await assertPageHealth(page, url, findings, 'catalog-navigation');
       steps.push({ action: 'Открыть категорию', detail: url });
 
-      const nested = (await getVisibleLinks(page)).filter(link => sameHost(link) && looksCatalog(link)).slice(0, 5);
+      const nested = (await getVisibleLinks(page)).filter(link => sameHost(link) && looksCatalog(link)).slice(0, enterpriseMode ? 12 : 5);
       for (const nestedUrl of nested) {
         if (stopIfBudgetExceeded(steps)) break;
         await assertPageHealth(page, normalizeUrl(nestedUrl), findings, 'catalog-nested');
@@ -139,7 +140,7 @@ export async function auditCatalogNavigation(page: Page, catalogUrls: string[], 
 }
 
 export async function auditFiltersAndSorting(page: Page, catalogUrls: string[], steps: DeepStep[], findings: DeepFinding[]): Promise<void> {
-  for (const url of catalogUrls.slice(0, 8)) {
+  for (const url of catalogUrls.slice(0, enterpriseMode ? 60 : 8)) {
     if (stopIfBudgetExceeded(steps)) break;
     try {
       await assertPageHealth(page, url, findings, 'filters');
@@ -147,7 +148,7 @@ export async function auditFiltersAndSorting(page: Page, catalogUrls: string[], 
 
       const search = page.locator('input[type=search], input[name*=search i], input[placeholder*=поиск i], input[placeholder*=найти i]').first();
       if (await search.count()) {
-        for (const term of searchTerms.slice(0, 3)) {
+        for (const term of searchTerms.slice(0, enterpriseMode ? 8 : 3)) {
           if (stopIfBudgetExceeded(steps)) break;
           await search.fill(term).catch(() => {});
           await search.press('Enter').catch(() => {});
@@ -160,7 +161,7 @@ export async function auditFiltersAndSorting(page: Page, catalogUrls: string[], 
       }
 
       const controls = page.locator('input[type=checkbox], input[type=radio], select, button:has-text("Фильтр"), button:has-text("Показать"), button:has-text("Цена"), button:has-text("Бренд")');
-      const controlCount = Math.min(await controls.count(), 10);
+      const controlCount = Math.min(await controls.count(), enterpriseMode ? 30 : 10);
       for (let index = 0; index < controlCount; index++) {
         if (stopIfBudgetExceeded(steps)) break;
         await safeClick(controls.nth(index), `фильтр ${index + 1}`);
@@ -170,7 +171,7 @@ export async function auditFiltersAndSorting(page: Page, catalogUrls: string[], 
       }
 
       const sortControls = page.locator('select, button:has-text("Сорт"), a:has-text("дешев"), a:has-text("дорог"), a:has-text("цен"), a:has-text("назван")');
-      const sortCount = Math.min(await sortControls.count(), 6);
+      const sortCount = Math.min(await sortControls.count(), enterpriseMode ? 18 : 6);
       for (let index = 0; index < sortCount; index++) {
         if (stopIfBudgetExceeded(steps)) break;
         await safeClick(sortControls.nth(index), `сортировка ${index + 1}`);
