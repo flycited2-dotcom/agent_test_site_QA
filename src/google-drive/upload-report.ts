@@ -23,6 +23,13 @@ function escapeQueryText(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function isExpiredOAuthToken(error: unknown): boolean {
+  if (!(error instanceof GaxiosError) || error.status !== 400) return false;
+  const data = JSON.stringify(error.response?.data || {});
+  const message = error instanceof Error ? error.message : String(error);
+  return /invalid_grant|expired|revoked/i.test(`${message} ${data}`);
+}
+
 if (!enabled) {
   console.log('Google Drive отключён: GOOGLE_DRIVE_ENABLED=false');
   process.exit(0);
@@ -118,6 +125,11 @@ try {
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
+  if (isExpiredOAuthToken(error)) {
+    console.error('Google Drive OAuth token истёк или отозван. Отчёты созданы локально, но не загружены в Drive. Запустите npm run qa:drive:auth и обновите GOOGLE_OAUTH_REFRESH_TOKEN.');
+    process.exit(1);
+  }
+
   if (error instanceof GaxiosError && error.status === 403 && /storage quota/i.test(message)) {
     throw new Error(
       'Google Drive отклонил загрузку: service account не имеет собственного хранилища. ' +

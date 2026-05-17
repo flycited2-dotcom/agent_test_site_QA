@@ -8,7 +8,7 @@
     "test:smoke": "cross-env QA_MODE=smoke playwright test tests/01-smoke.spec.ts",
     "test:critical": "cross-env QA_MODE=critical playwright test tests/02-critical-path.spec.ts tests/03-forms-links.spec.ts tests/07-user-journeys.spec.ts",
     "test:full": "cross-env QA_MODE=full playwright test",
-    "test:enterprise": "cross-env QA_MODE=enterprise MAX_PRODUCTS_FULL=1200 MAX_PRODUCTS_SMOKE=30 MAX_CATEGORY_PAGES=350 MAX_DEEP_PRODUCT_URLS=1200 MAX_DEEP_CATALOG_URLS=350 DEEP_AUDIT_BUDGET_MS=21600000 ACTION_DELAY_MS=250 QA_SEARCH_TERMS=кондиционер,сплит,товар,каталог,доставка,монтаж,оплата,гарантия playwright test",
+    "test:enterprise": "cross-env QA_MODE=enterprise PLAYWRIGHT_WORKERS=1 PLAYWRIGHT_VIDEO=off PLAYWRIGHT_RETRIES=0 MAX_PRODUCTS_FULL=1200 MAX_PRODUCTS_SMOKE=30 MAX_CATEGORY_PAGES=350 MAX_DEEP_PRODUCT_URLS=1200 MAX_DEEP_CATALOG_URLS=350 DEEP_AUDIT_BUDGET_MS=21600000 ACTION_DELAY_MS=250 QA_SEARCH_TERMS=кондиционер,сплит,товар,каталог,доставка,монтаж,оплата,гарантия playwright test",
     "test:headed": "playwright test --headed",
     "report": "playwright show-report reports/html",
     "qa:discover": "tsx src/discovery/discover.ts",
