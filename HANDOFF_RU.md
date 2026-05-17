@@ -1,93 +1,121 @@
 # Handoff: агент-тестировщик сайтов
 
-Дата: 2026-05-17
+Дата обновления: 2026-05-17
 Репозиторий: `C:\Users\user\Documents\GitHub\agent_test_site_QA`
 VPS: `root@212.116.115.150`
 Контейнер: `climat-simf-qa-agent`
+Ветка: `main`
 
 ## Текущее состояние
 
-- Enterprise-прогон уже запущен. Пользователю не нужно запускать его вручную в Telegram.
-- Lock-файл на VPS:
+- Контейнер жив и запущен из нового образа:
+  - image: `climat-simf-qa-agent-qa-agent`
+  - command: `bash scripts/start-agent.sh`
+- Агент стоит на паузе:
   ```json
-  {
-    "pid": 181,
-    "depth": "enterprise",
-    "startedAt": "2026-05-16T23:29:47.596Z"
-  }
+  {"paused":true,"reason":"manual pause to restore telegram bot","updatedAt":"2026-05-17T00:00:00.000Z"}
   ```
-- Логи показывают:
-  - `Enterprise run`
-  - `Найдено URL: 1031`
-  - `Running 69 tests using 2 workers`
-- В свежем прогоне уже найден реальный сбой на главной странице: `500 Internal Server Error` и отменённые загрузки CSS/JS chunk-файлов.
-- Telegram-бот отвечает, summary в Telegram отправлялся.
-- Google Drive upload сейчас падает с `invalid_grant`: OAuth-токен истёк или отозван.
+- QA-прогон сейчас не идёт:
+  - `storage/run.lock.json` отсутствует;
+  - процессов `qa:run`, `playwright`, `ffmpeg` нет.
+- Работают только:
+  - `qa:bot`;
+  - `agent-loop`.
+- Последний контрольный smoke прошёл успешно:
+  - `6 passed`;
+  - `0` ошибок;
+  - summary отправлен в Telegram.
+- Telegram восстановлен:
+  - `fetch('https://api.telegram.org')` внутри контейнера: `OK 200`;
+  - тестовое сообщение ушло: `SEND 200`;
+  - штатная отправка: `Telegram status: 200`.
+- Google Drive восстановлен:
+  - OAuth refresh token обновлён;
+  - `npm run qa:drive` успешно загрузил отчёты в Drive.
+
+## Что было причиной сбоев
+
+- Тяжёлый `enterprise`-прогон перегрузил VPS: Playwright, retries и видео на падениях создавали лишнюю нагрузку.
+- После этого Telegram-бот был жив, но не мог достучаться до Telegram API.
+- DNS отдавал `api.telegram.org -> 149.154.166.110`, а этот IP с VPS таймаутился.
+- Рабочий IP Telegram API для этого VPS: `149.154.167.220`.
+- Google Drive отдельно падал из-за `invalid_grant`: старый OAuth refresh token истёк или был отозван.
 
 ## Что сделано
 
-- Добавлен новый режим глубины `enterprise`.
-- Telegram-команды и кнопки теперь поддерживают `Enterprise`.
-- Loop-скрипт теперь реально запускает `qa:run:enterprise`, а не откатывается к старым режимам.
-- Enterprise-режим расширен:
-  - до `1200` товаров;
-  - до `350` категорий;
-  - до `6 часов` бюджета deep-audit;
-  - больше фильтров, сортировок, вложенных категорий и поисковых терминов.
-- Исправлена модель отчётов: `skipped` больше не считается как `failed`.
-- Добавлена `.dockerignore`, чтобы Docker build не тащил гигабайты `reports`, `test-results`, `storage`, видео и traces.
-- Код закоммичен и запушен:
-  - `38acff9 Add enterprise QA audit mode`
-  - ветка `main`
+- Добавлен режим `enterprise`.
+- Исправлено переключение режимов из Telegram.
+- Enterprise теперь запускается бережнее для VPS:
+  - `PLAYWRIGHT_WORKERS=1`;
+  - `PLAYWRIGHT_VIDEO=off`;
+  - `PLAYWRIGHT_RETRIES=0`.
+- Добавлен `scripts/start-agent.sh`: бот теперь запускается под простым supervisor-циклом.
+- В `docker-compose.yml` закреплён рабочий Telegram API host:
+  ```yaml
+  extra_hosts:
+    - "api.telegram.org:149.154.167.220"
+  ```
+- Добавлена `.dockerignore`; Docker build context уменьшился до десятков KB вместо гигабайтов.
+- Docker image успешно пересобран.
+- Контейнер пересоздан и запущен из нового образа.
+- OAuth Google Drive переавторизован, новый refresh token записан в серверный `.env`.
+- Старые секреты не коммитились.
+
+## Коммиты
+
+- `38acff9 Add enterprise QA audit mode`
+- `d2fa68d Add QA agent handoff`
+- `a4459e6 Stabilize QA bot during enterprise runs`
+- `d35d915 Pin Telegram API host for QA bot`
 
 ## Проверки
 
 - Локально:
-  - targeted Playwright tests: passed
-  - `tsc --noEmit`: passed
-  - `npm run test:enterprise -- --list`: показывает `69 tests`
-- В контейнере:
-  - targeted tests: `24 passed`
+  - `npx tsc --noEmit`: passed;
+  - targeted Playwright tests: `27 passed`;
+  - `npm run test:enterprise -- --list`: `69 tests`.
 - На VPS:
-  - контейнер жив;
-  - процесс `qa:run:enterprise` активен;
-  - Playwright активен;
-  - lock depth: `enterprise`.
+  - Docker build: passed;
+  - container: up;
+  - Telegram fetch: `OK 200`;
+  - `npm run qa:telegram`: `Telegram status: 200`;
+  - `npm run qa:drive`: files uploaded to Google Drive;
+  - smoke run: `6 passed`.
 
-## Важные замечания
+## Что делать дальше
 
-- Не запускать новый прогон руками, пока текущий enterprise-run не завершится.
-- Не делать `docker compose up -d` / пересоздание контейнера без успешного rebuild: Docker image всё ещё старый, контейнер сейчас hot-patched обновлёнными файлами.
-- Попытки `docker compose build` и `docker commit` раньше обрывали SSH на этапе Docker export. `.dockerignore` уже исправляет огромный build-context, но сам rebuild нужно отдельно проверить завтра.
-- Google Drive не починится сам: нужен новый OAuth refresh token через `qa:drive:auth` или ручная переавторизация.
-
-## Что сделать утром
-
-1. Проверить, завершился ли enterprise-run:
-   ```bash
-   ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "cat /root/climat-simf-qa-agent/storage/run.lock.json 2>/dev/null || true; docker logs --tail 120 climat-simf-qa-agent"
-   ```
-2. Если lock-файла нет, забрать итоговый отчёт и посмотреть summary.
-3. Разобрать первые реальные падения:
-   - `500 Internal Server Error` на главной;
-   - отменённые загрузки `_next/static/chunks/*.css` и `*.js`.
-4. Переавторизовать Google Drive upload.
-5. Аккуратно проверить rebuild Docker image после `.dockerignore`.
+1. Не запускать сразу `enterprise`.
+2. Сначала вручную запустить `critical`.
+3. Если `critical` проходит и отчёты уходят в Telegram/Drive, запускать `enterprise` только контролируемо, лучше на ночь.
+4. После любого тяжёлого прогона проверить:
+   - `storage/run.lock.json`;
+   - `docker logs --tail 120 climat-simf-qa-agent`;
+   - Telegram summary;
+   - Drive uploads.
 
 ## Быстрые команды
 
-Статус контейнера:
+Статус:
 ```bash
-ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "docker ps --filter name=climat-simf-qa-agent"
+ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "cd /root/climat-simf-qa-agent && docker ps --filter name=climat-simf-qa-agent && cat storage/control.json 2>/dev/null || true && cat storage/run.lock.json 2>/dev/null || true"
 ```
 
-Свежие логи:
+Логи:
 ```bash
 ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "docker logs --tail 160 climat-simf-qa-agent"
 ```
 
-Процессы внутри контейнера:
+Процессы:
 ```bash
 ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "docker exec climat-simf-qa-agent ps -ef"
 ```
 
+Ручной smoke:
+```bash
+ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "cd /root/climat-simf-qa-agent && docker exec climat-simf-qa-agent npm run qa:run:smoke"
+```
+
+Ручной critical:
+```bash
+ssh -i ~/.ssh/climat_simf_deploy root@212.116.115.150 "cd /root/climat-simf-qa-agent && docker exec climat-simf-qa-agent npm run qa:run:critical"
+```
