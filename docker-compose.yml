@@ -12,5 +12,7 @@ services:
     restart: unless-stopped
     stop_grace_period: 120s
     network_mode: host
+    extra_hosts:
+      - "api.telegram.org:149.154.167.220"
     shm_size: "1gb"
     command: bash scripts/start-agent.sh
