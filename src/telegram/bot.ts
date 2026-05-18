@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import dotenv from 'dotenv';
 import { parseCommand, helpText, runtimeAfterManualRun } from './commands';
+import { formatRunControlState, readRunControlState, startManualRun, type StartedManualRun } from './run-control';
 import { normalizeDepth, normalizeProfile, readRuntimeConfig, writeRuntimeConfig, updateRuntimeSite, type RuntimeConfig, type SiteProfile, type TestDepth } from '../utils/runtime-config';
 import { listReportFiles, todayIso } from '../reporters/report-files';
 
@@ -143,9 +143,12 @@ async function sendDocument(filePath: string): Promise<void> {
   await telegram('sendDocument', data);
 }
 
-function runCommand(command: string, args: string[]): void {
-  const child = spawn(command, args, { stdio: 'ignore', detached: true, shell: process.platform === 'win32' });
-  child.unref();
+function runQaCommand(depth: TestDepth): StartedManualRun {
+  return startManualRun('npm', ['run', `qa:run:${depth}`], depth);
+}
+
+function startedManualRunText(started: StartedManualRun): string {
+  return `PID: ${started.pid ?? 'unknown'}\nЛог: ${started.logPath}`;
 }
 
 function setDepth(runtime: RuntimeConfig, depth: TestDepth): RuntimeConfig {
@@ -187,7 +190,8 @@ async function handle(text: string): Promise<void> {
     const coveragePath = path.resolve('reports/developer/QA_COVERAGE.md');
     const active = fs.existsSync(activePath) ? fs.readFileSync(activePath, 'utf8') : 'Активный отчёт ещё не создан.';
     const coverage = fs.existsSync(coveragePath) ? fs.readFileSync(coveragePath, 'utf8') : 'Отчёт покрытия ещё не создан.';
-    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nРежим расписания: ${runtime.site.depth}\n\n${active.slice(0, 1400)}\n\n${coverage.slice(0, 1400)}`, mainKeyboard(runtime));
+    const runState = formatRunControlState(readRunControlState());
+    await sendMessage(`Сайт: ${runtime.site.url}\nПрофиль: ${runtime.site.profile}\nРежим расписания: ${runtime.site.depth}\n${runState}\n\n${active.slice(0, 1400)}\n\n${coverage.slice(0, 1400)}`, mainKeyboard(runtime));
     return;
   }
 
@@ -200,8 +204,8 @@ async function handle(text: string): Promise<void> {
 
   if (command.type === 'run') {
     const next = setDepth(runtimeAfterManualRun(runtime, command.depth), command.depth);
-    runCommand('npm', ['run', `qa:run:${command.depth}`]);
-    await sendMessage(`Режим установлен и запущена проверка: ${command.depth}`, mainKeyboard(next));
+    const started = runQaCommand(command.depth);
+    await sendMessage(`Режим установлен и запущена проверка: ${command.depth}\n${startedManualRunText(started)}`, mainKeyboard(next));
     return;
   }
 
@@ -219,8 +223,8 @@ async function handle(text: string): Promise<void> {
 
   if (command.type === 'restart') {
     writeControl({ paused: false, restartedAt: new Date().toISOString() });
-    runCommand('npm', ['run', `qa:run:${runtime.site.depth}`]);
-    await sendMessage(`Перезапустил агента и запустил проверку: ${runtime.site.depth}`, mainKeyboard(runtime));
+    const started = runQaCommand(runtime.site.depth);
+    await sendMessage(`Перезапустил агента и запустил проверку: ${runtime.site.depth}\n${startedManualRunText(started)}`, mainKeyboard(runtime));
     return;
   }
 
@@ -274,8 +278,8 @@ async function handleCallback(data: string, callbackQueryId: string): Promise<vo
   if (data.startsWith('run:')) {
     const depth = normalizeDepth(data.slice('run:'.length));
     const next = setDepth(runtimeAfterManualRun(runtime, depth), depth);
-    runCommand('npm', ['run', `qa:run:${depth}`]);
-    await sendMessage(`Режим установлен и запущена проверка: ${depth}`, mainKeyboard(next));
+    const started = runQaCommand(depth);
+    await sendMessage(`Режим установлен и запущена проверка: ${depth}\n${startedManualRunText(started)}`, mainKeyboard(next));
     return;
   }
   if (data.startsWith('profile:')) {
