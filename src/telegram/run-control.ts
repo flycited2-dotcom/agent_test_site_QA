@@ -117,8 +117,7 @@ export function startManualRun(command: string, args: string[], depth: TestDepth
       settled = true;
       const footer = `[${new Date().toISOString()}] Manual QA run finished: code=${code ?? 'null'} signal=${signal ?? 'none'} log=${logPath}\n`;
       process.stdout.write(footer);
-      log.end(footer);
-      resolve(code);
+      log.end(footer, () => resolve(code));
     };
 
     child.on('error', error => {
