@@ -21,7 +21,15 @@
     "qa:run:smoke": "tsx src/runner/run-qa.ts smoke",
     "qa:run:critical": "tsx src/runner/run-qa.ts critical",
     "qa:run:full": "tsx src/runner/run-qa.ts full",
-    "qa:run:enterprise": "tsx src/runner/run-qa.ts enterprise"
+    "qa:run:enterprise": "tsx src/runner/run-qa.ts enterprise",
+
+    "crm:smoke":         "cross-env CRM_QA_MODE=smoke playwright test --config=playwright.crm.config.ts tests/crm/crm-01-smoke.spec.ts",
+    "crm:leads":         "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-02-leads.spec.ts",
+    "crm:clients":       "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-03-clients.spec.ts",
+    "crm:tasks":         "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-04-tasks.spec.ts",
+    "crm:integration":   "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-05-integration.spec.ts",
+    "crm:full":          "cross-env CRM_QA_MODE=full    playwright test --config=playwright.crm.config.ts",
+    "crm:report":        "playwright show-report reports/crm/html"
   },
   "devDependencies": {
     "@playwright/test": "1.59.1",
