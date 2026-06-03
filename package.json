@@ -28,6 +28,12 @@
     "crm:clients":       "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-03-clients.spec.ts",
     "crm:tasks":         "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-04-tasks.spec.ts",
     "crm:integration":   "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-05-integration.spec.ts",
+    "crm:incoming":      "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-06-incoming.spec.ts",
+    "crm:pipeline":      "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-07-pipeline.spec.ts",
+    "crm:deals":         "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-08-deals.spec.ts",
+    "crm:search":        "cross-env CRM_QA_MODE=critical playwright test --config=playwright.crm.config.ts tests/crm/crm-09-search-filter.spec.ts",
+    "crm:analytics":     "cross-env CRM_QA_MODE=full    playwright test --config=playwright.crm.config.ts tests/crm/crm-10-analytics.spec.ts",
+    "crm:admin":         "cross-env CRM_QA_MODE=full    playwright test --config=playwright.crm.config.ts tests/crm/crm-11-admin.spec.ts",
     "crm:full":          "cross-env CRM_QA_MODE=full    playwright test --config=playwright.crm.config.ts",
     "crm:report":        "playwright show-report reports/crm/html"
   },
