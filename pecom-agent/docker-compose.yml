@@ -1,0 +1,9 @@
+services:
+  pecom-agent:
+    build: .
+    container_name: pecom-agent
+    env_file:
+      - .env
+    volumes:
+      - ./storage:/app/storage
+    restart: unless-stopped

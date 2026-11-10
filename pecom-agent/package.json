@@ -1,0 +1,23 @@
+{
+  "name": "pecom-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Агент-помощник по ТК ПЭК: Telegram-бот + API личного кабинета ПЭК + ИИ-ассистент Claude",
+  "scripts": {
+    "bot": "tsx src/bot.ts",
+    "check": "tsx src/cli.ts check",
+    "cli": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
